@@ -10,7 +10,7 @@
 
 	<ldap>
 		<url>ldap://*your*ldap*url*</url>
-                <o>*your*organization*unit*</o>
+                <ou>*your*organization*unit*</ou>
 	</ldap>
 	
 	<ldapfields>
@@ -58,9 +58,8 @@
 	</system>
 	
 	<ldap>
-		<url>ldap://BLANK.com/</url>
-		<security-authentication>none</security-authentication>
-		<o>BLANK</o>
+		<url>ldap://domain.com:389</url>
+		<ou>BLANK</ou>
 	</ldap>
 	
 	<ldapfields>

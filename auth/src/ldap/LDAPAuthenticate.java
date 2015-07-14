@@ -12,6 +12,8 @@ import javax.naming.NamingException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.naming.ldap.InitialLdapContext;
+import javax.naming.ldap.LdapContext;
 
 import org.apache.commons.lang.WordUtils;
 import org.w3c.dom.Document;
@@ -29,14 +31,19 @@ public class LDAPAuthenticate {
 	private String authenticated;
 	private Hashtable<Object, Object> env;
 	private DirContext ldapContextNone;
-	private String url;
-	private String o;
-        
-        //Params for user search
+
+        // Domain Params
+        private String ldapServer;
+	private String ldapSearch;
+//        private String ldapUsername;
+//        private String ldapPassword;
+                
+        // Params for user search
         private String searchBase;
         private String searchFilter;
         private SearchControls searchCtrl;
-	
+        
+	// Fields in LDAP base
 	private String positionField;
 	private String userIDField;
 	private String givenNameField;
@@ -72,6 +79,7 @@ public class LDAPAuthenticate {
 		
 		increaseStat(1);
 		
+                // Reading config.xml content
 		try {
 			//Using factory get an instance of document builder
 			DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -93,9 +101,9 @@ public class LDAPAuthenticate {
 			NodeList ldapConfig = docEle.getElementsByTagName("ldap").item(0).getChildNodes();
 			for (int i=0; i<ldapConfig.getLength(); i++) {
 				if (ldapConfig.item(i).getNodeName().equals("url")) {
-					url = ldapConfig.item(i).getFirstChild().getNodeValue();
-				} else if (ldapConfig.item(i).getNodeName().equals("o")) {
-					o = ldapConfig.item(i).getFirstChild().getNodeValue();
+					ldapServer = ldapConfig.item(i).getFirstChild().getNodeValue();
+				} else if (ldapConfig.item(i).getNodeName().equals("ou")) {
+					ldapSearch = ldapConfig.item(i).getFirstChild().getNodeValue();
 				}
 			}
 			
@@ -181,11 +189,21 @@ public class LDAPAuthenticate {
 		env = new Hashtable<Object, Object>();
 		
                 env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-		
+                // Simple authentication method
+                env.put(Context.SECURITY_AUTHENTICATION, "none");
+                
+/*                // Setting domain admin username
+                if(ldapUsername != null) {
+                    env.put(Context.SECURITY_PRINCIPAL, ldapUsername);
+                }
+                // Setting domain admin password
+                if(ldapPassword != null) {
+                    env.put(Context.SECURITY_CREDENTIALS, ldapPassword);
+                }
+*/                
 		// specify where the ldap server is running
-		env.put(Context.PROVIDER_URL, url);
-		env.put(Context.SECURITY_AUTHENTICATION, "none");
-		
+		env.put(Context.PROVIDER_URL, ldapServer);
+                
 		// Create the initial directory context
 		try {
 			ldapContextNone = new InitialDirContext(env);
@@ -246,19 +264,21 @@ public class LDAPAuthenticate {
 			try {
 				env = new Hashtable<Object, Object>();
 				env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-				
-				// specify where the ldap server is running
-				env.put(Context.PROVIDER_URL, url);
-				env.put(Context.SECURITY_AUTHENTICATION, "simple");
+				                                
+                                // Simple authentication method
+                                env.put(Context.SECURITY_AUTHENTICATION, "simple");
+                                // Specify where the ldap server is running
+                                env.put(Context.PROVIDER_URL, ldapServer);
+                                
 				String userIDString = userIDField + "=" + user;
 				String positionString = positionField + "=" + position;
 	
-				env.put(Context.SECURITY_PRINCIPAL, userIDString + ", " + positionString + ", o="+o);
+				env.put(Context.SECURITY_PRINCIPAL, userIDString + ", " + positionString + ", " + ldapSearch);
 				env.put(Context.SECURITY_CREDENTIALS, pass);
 				
 				// this command will throw an exception if the password is incorrect
 				DirContext ldapContext = new InitialDirContext(env);
-				NamingEnumeration<SearchResult> results = ldapContext.search("o=" + o, "(&(" + userIDField + "=" + user + "))", searchCtrl);
+				NamingEnumeration<SearchResult> results = ldapContext.search(ldapSearch, "(&(" + userIDField + "=" + user + "))", searchCtrl);
                               
 				if (!results.hasMore()) // search failed
 					throw new NamingException();
@@ -306,8 +326,10 @@ public class LDAPAuthenticate {
 		
 		if (ldapContextNone!=null) { // if the initial context was created fine
 			try {
-                                searchBase = o;
+                                searchBase = ldapSearch;
+                                //searchFilter = "(&(" + userIDField + "="+user+"))";
                                 searchFilter = "(&(" + userIDField + "="+user+"))";
+                                
 				NamingEnumeration<SearchResult> results = ldapContextNone.search(searchBase, searchFilter, searchCtrl);
 				
 				if (!results.hasMore()) // search failed
@@ -330,7 +352,7 @@ public class LDAPAuthenticate {
 			  catch (Exception e) {}
 		}
 		
-		authenticated = "failed";
+		authenticated = "failedsearch";
 		
 		return false;
 	}

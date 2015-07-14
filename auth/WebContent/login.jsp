@@ -94,6 +94,9 @@
 			<%
 				if (ldap.getAuthenticated().equals("failed")) {
 					out.print("<div style='color:red' align='center'> Your credentials are incorrect, please try again</div>");
+                                } else if (ldap.getAuthenticated().equals("failedsearch")) {
+                                        out.print("<div style='color:red' align='center'> Search in domain failed</div>");
+                                }
 				} else if (ldap.getAuthenticated().equals("error")) {
 					out.print("<div style='color:red' align='center'> Error with login please contact the system administrator.</div>");
 				} else if (ldap.getAuthenticated().equals("timeout")) {
