@@ -10,7 +10,7 @@
 
 	<ldap>
 		<url>ldap://*your*ldap*url*</url>
-		<o>*your*o*</o>
+                <o>*your*organization*unit*</o>
 	</ldap>
 	
 	<ldapfields>

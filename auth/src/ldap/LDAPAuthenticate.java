@@ -29,9 +29,13 @@ public class LDAPAuthenticate {
 	private String authenticated;
 	private Hashtable<Object, Object> env;
 	private DirContext ldapContextNone;
-	private SearchControls searchCtrl;
 	private String url;
 	private String o;
+        
+        //Params for user search
+        private String searchBase;
+        private String searchFilter;
+        private SearchControls searchCtrl;
 	
 	private String positionField;
 	private String userIDField;
@@ -42,6 +46,8 @@ public class LDAPAuthenticate {
 	private String userID;
 	private String givenName;
 	private String title;
+        
+        private boolean logout;
 	
 	private Date lastAccess;
 	private Integer timeoutTime;
@@ -59,9 +65,7 @@ public class LDAPAuthenticate {
 	 *   			 }
 	 * }
 	 */
-	
-	private boolean logout;
-	
+		
 	public LDAPAuthenticate() {
 		authenticated = "false";
 		logout = false;
@@ -175,7 +179,8 @@ public class LDAPAuthenticate {
 		}
 		
 		env = new Hashtable<Object, Object>();
-		env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+		
+                env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
 		
 		// specify where the ldap server is running
 		env.put(Context.PROVIDER_URL, url);
@@ -254,7 +259,7 @@ public class LDAPAuthenticate {
 				// this command will throw an exception if the password is incorrect
 				DirContext ldapContext = new InitialDirContext(env);
 				NamingEnumeration<SearchResult> results = ldapContext.search("o=" + o, "(&(" + userIDField + "=" + user + "))", searchCtrl);
-				
+                              
 				if (!results.hasMore()) // search failed
 					throw new NamingException();
 
@@ -301,7 +306,9 @@ public class LDAPAuthenticate {
 		
 		if (ldapContextNone!=null) { // if the initial context was created fine
 			try {
-				NamingEnumeration<SearchResult> results = ldapContextNone.search("o="+o, "(&(" + userIDField + "="+user+"))", searchCtrl);
+                                searchBase = o;
+                                searchFilter = "(&(" + userIDField + "="+user+"))";
+				NamingEnumeration<SearchResult> results = ldapContextNone.search(searchBase, searchFilter, searchCtrl);
 				
 				if (!results.hasMore()) // search failed
 					throw new Exception();
@@ -384,18 +391,7 @@ public class LDAPAuthenticate {
 	public String getPlaceholder() {
 		return placeholder;
 	}
-	// ----
-	// Methods for returning the lists of valid positions and titles which can use the system
-	// Temporarily deactivated
-	/*
-	public String [] getTitleList() {
-		return titleList;
-	}
-	public String [] getPositionList() {
-		return positionList;
-	}
-	*/
-	// ----
+
 	public String getAuthenticated() {
 		Date now = new Date();
 		if (lastAccess != null) {
@@ -428,7 +424,8 @@ public class LDAPAuthenticate {
 	
 	private void increaseStat(int num) {		
 		try {
-			FileInputStream fstream = new FileInputStream("/var/lib/tomcat6/webapps/auth/WEB-INF/stats.txt");  
+                
+                FileInputStream fstream = new FileInputStream("/var/lib/tomcat7/webapps/auth/WEB-INF/stats.txt");  
 	        // Get the object of DataInputStream  
 	        DataInputStream in = new DataInputStream(fstream);  
 	        BufferedReader br = new BufferedReader(new InputStreamReader(in));  
@@ -447,7 +444,7 @@ public class LDAPAuthenticate {
 	        in.close();
 	        
 	        Writer output = null;  
-            File file = new File("/var/lib/tomcat6/webapps/auth/WEB-INF/stats.txt");  
+            File file = new File("/var/lib/tomcat7/webapps/auth/WEB-INF/stats.txt");  
             output = new BufferedWriter(new FileWriter(file));  
             output.write(sb.toString());
   
@@ -455,7 +452,7 @@ public class LDAPAuthenticate {
 		} catch (Exception e2) {
             try {
 				Writer output = null;  
-	            File file = new File("/var/lib/tomcat6/webapps/auth/WEB-INF/stats.txt");  
+	            File file = new File("/var/lib/tomcat7/webapps/auth/WEB-INF/stats.txt");  
 	            output = new BufferedWriter(new FileWriter(file));  
 				output.write("0\n0\n0");
 				output.close();
@@ -469,7 +466,8 @@ public class LDAPAuthenticate {
 		int [] stats = {0,0,0};
 		
 		try {
-			FileInputStream fstream = new FileInputStream("/var/lib/tomcat6/webapps/auth/WEB-INF/stats.txt");  
+		
+                FileInputStream fstream = new FileInputStream("/var/lib/tomcat7/webapps/auth/WEB-INF/stats.txt");  
 	        // Get the object of DataInputStream  
 	        DataInputStream in = new DataInputStream(fstream);  
 	        BufferedReader br = new BufferedReader(new InputStreamReader(in));  
@@ -486,4 +484,17 @@ public class LDAPAuthenticate {
 		}
 		return stats;
 	}
+        
+        // ----
+	// Methods for returning the lists of valid positions and titles which can use the system
+	// Temporarily deactivated
+	/*
+	public String [] getTitleList() {
+		return titleList;
+	}
+	public String [] getPositionList() {
+		return positionList;
+	}
+	*/
+	// ----
 }
